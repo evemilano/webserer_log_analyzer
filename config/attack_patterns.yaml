@@ -1,0 +1,127 @@
+# Riconoscimento del traffico di scanner e attacco.
+#
+# Su evemilano.com questo traffico non è marginale: `wp-login.php` prende
+# 675.000 richieste, `wp-cron.php` 454.000, e fra le estensioni più richieste
+# dopo `.php` ci sono `.env`, `.sql`, `.bak` e `.key`. Senza separarlo, le
+# tabelle "top URI" e "crawl waste" del report finiscono dominate da URL che
+# non esistono e non interessano a nessuno.
+#
+# Le regole si valutano nell'ordine del file, primo match vince, e producono
+# due colonne:
+#   probe_family      la famiglia riconosciuta; null per il traffico normale
+#   is_attack_probe   true solo per i tentativi effettivamente ostili
+#
+# La distinzione serve perché non tutto ciò che va escluso dalle viste SEO è
+# un attacco: `wp-cron.php` è un endpoint interno di WordPress, rumore ma non
+# ostilità. Le viste SEO escludono tutto ciò che ha una `probe_family`; la
+# sezione sulla sicurezza guarda `is_attack_probe`.
+
+rules:
+
+  # --- credenziali e configurazione ---------------------------------------
+
+  - id: env_files
+    family: "File .env"
+    attack: true
+    # Non basta cercare `/.env`. Gli scanner provano `/sendgrid.env`,
+    # `/aws.env.json`, `/.envrc`, e soprattutto varianti codificate per
+    # eludere i filtri: `/.env%09`, `/.env;`, `/%2f.env%2eexample`.
+    # Si cerca quindi `.env` seguito da un carattere che non sia una lettera
+    # (o dalla fine), il che prende tutte le varianti e lascia fuori
+    # `documento.envelope.pdf`. Niente lookahead: il motore regex di Polars
+    # non lo supporta.
+    path_regex: '(?i)\.env($|[^a-z])|\.env(rc|s|ironment)($|[^a-z])'
+
+  - id: vcs_exposure
+    family: "Repository esposti"
+    attack: true
+    path_regex: '(?i)/\.(git|svn|hg|bzr)(/|$)'
+
+  - id: config_files
+    family: "File di configurazione"
+    attack: true
+    path_regex: '(?i)(wp-config|configuration\.php|config\.(php|json|ya?ml|ini|inc)|settings\.py|database\.yml|/\.aws/|/\.ssh/|/\.docker)'
+
+  - id: secrets
+    family: "Chiavi e credenziali"
+    attack: true
+    path_regex: '(?i)\.(key|pem|p12|pfx|crt)$|id_rsa|/credentials|/secrets?\.'
+
+  - id: backup_dumps
+    family: "Backup e dump"
+    attack: true
+    path_regex: '(?i)\.(sql|sql\.gz|bak|old|swp|save|orig|tar|tar\.gz|tgz|7z|rar)$|/(backup|dump|db_backup)[^/]*$'
+
+  # --- exploit --------------------------------------------------------------
+
+  - id: php_exploits
+    family: "Exploit PHP"
+    attack: true
+    path_regex: '(?i)/vendor/phpunit|eval-stdin|phpinfo|/(shell|alfa|wso|c99|r57|indoxploit|adminer)\.php|allow_url_include'
+
+  - id: vpn_appliance
+    family: "Appliance VPN e firewall"
+    attack: true
+    path_regex: '(?i)/(ssl-vpn|global-protect|remote/fgt_lang|remote/login|\+CSCOE\+|dana-na|vpn/index)'
+
+  - id: admin_panels
+    family: "Pannelli di amministrazione"
+    attack: true
+    path_regex: '(?i)/(phpmyadmin|pma|myadmin|mysqladmin|dbadmin|adminer|webadmin|manager/html)(/|$)'
+
+  - id: cgi_exploits
+    family: "CGI e injection"
+    attack: true
+    path_regex: '(?i)/cgi-bin/|\$\{jndi:|/boaform/|/HNAP1|\.\./\.\.'
+
+  # --- WordPress ------------------------------------------------------------
+
+  - id: wp_login_bruteforce
+    family: "Brute force wp-login"
+    attack: true
+    path_regex: '(?i)/wp-login\.php'
+    methods: [POST]
+
+  - id: wp_login_probe
+    family: "Ricognizione wp-login"
+    attack: true
+    path_regex: '(?i)/wp-login\.php|/wp-admin/(admin-ajax|install|setup-config)\.php'
+
+  - id: xmlrpc
+    family: "XML-RPC"
+    attack: true
+    path_regex: '(?i)/xmlrpc\.php'
+
+  - id: wp_includes_probe
+    family: "Sonde su wp-includes"
+    attack: true
+    path_regex: '(?i)/wp-(includes|content/(plugins|themes|uploads))/.*\.(php|phtml|php5|php7|suspected)$'
+
+  - id: wp_plugin_readme
+    family: "Enumerazione plugin"
+    attack: true
+    path_regex: '(?i)/wp-content/plugins/[^/]+/(readme\.txt|changelog\.txt|license\.txt)$'
+
+  # --- rumore non ostile ----------------------------------------------------
+  # Va escluso dalle viste SEO come il resto, ma non è un attacco.
+
+  - id: wp_cron
+    family: "wp-cron"
+    attack: false
+    path_regex: '(?i)/wp-cron\.php'
+
+  - id: wp_comments
+    family: "Invio commenti"
+    attack: false
+    path_regex: '(?i)/wp-comments-post\.php'
+
+  # --- generico -------------------------------------------------------------
+  # Ultima rete: una richiesta a un file eseguibile fuori dai percorsi noti di
+  # WordPress, che ha ricevuto un 404, è quasi certamente una sonda.
+
+  - id: generic_php_404
+    family: "Sonde PHP generiche"
+    attack: true
+    path_regex: '(?i)\.(php|phtml|asp|aspx|jsp|cgi|do)$'
+    exclude_path_regex: '(?i)^/(index\.php|wp-cron\.php|wp-comments-post\.php|wp-login\.php|wp-admin/|wp-json/)'
+    statuses: [400, 401, 403, 404, 410, 500]

@@ -1,0 +1,23 @@
+# virtualenv
+amb/
+
+# artefatti di pipeline (rigenerabili)
+logs/
+data/
+cache/
+errors/
+output/
+
+# input esterni forniti a mano (sitemap, export Screaming Frog)
+input/
+
+# credenziali
+credenziali/
+*.env
+
+# config specifici di sito (domini/traffico clienti, percorsi privati)
+config/sites/
+
+# python
+__pycache__/
+*.pyc

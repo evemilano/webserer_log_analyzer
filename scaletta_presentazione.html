@@ -1,0 +1,318 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>:root{color-scheme:light dark}body{margin:0}img{max-width:100%}</style>
+<title>Cinque minuti di log</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap">
+<style>
+  :root{
+    --ground:#f2f5f4; --paper:#ffffff; --ink:#111b19; --muted:#5c6c68; --faint:#8b9a96;
+    --rule:#d9e1de; --rule-soft:#e7edeb;
+    --accent:#0b5d54; --accent-ink:#0b5d54; --accent-soft:#dceeea; --on-accent:#ffffff;
+    --alert:#a03528; --alert-soft:#f7e5e2;
+    --warn:#8a5d10;
+    --shadow:0 1px 2px rgba(17,27,25,.05), 0 8px 24px -18px rgba(17,27,25,.35);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --ground:#0d1312; --paper:#141d1b; --ink:#e3eae7; --muted:#93a5a0; --faint:#6f817c;
+      --rule:#233130; --rule-soft:#1c2726;
+      --accent:#3f9d8c; --accent-ink:#7fd8c6; --accent-soft:#15302c; --on-accent:#08120f;
+      --alert:#ef8272; --alert-soft:#38201c;
+      --warn:#ddaa4d;
+      --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -18px rgba(0,0,0,.8);
+    }
+  }
+  :root[data-theme="dark"]{
+    --ground:#0d1312; --paper:#141d1b; --ink:#e3eae7; --muted:#93a5a0; --faint:#6f817c;
+    --rule:#233130; --rule-soft:#1c2726;
+    --accent:#3f9d8c; --accent-ink:#7fd8c6; --accent-soft:#15302c; --on-accent:#08120f;
+    --alert:#ef8272; --alert-soft:#38201c;
+    --warn:#ddaa4d;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -18px rgba(0,0,0,.8);
+  }
+
+  body{
+    background:var(--ground); color:var(--ink);
+    font-family:"Source Serif 4","Iowan Old Style",Georgia,serif;
+    font-size:17px; line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:64rem; margin:0 auto; padding:clamp(1.5rem,4vw,3.5rem) clamp(1.1rem,4vw,2.5rem) 5rem;}
+
+  h1,h2,h3{font-family:"Archivo","Helvetica Neue",Arial,sans-serif;}
+  .mono{font-family:"IBM Plex Mono",ui-monospace,SFMono-Regular,Consolas,monospace;}
+
+  header{border-bottom:1px solid var(--rule); padding-bottom:2rem; margin-bottom:2rem;}
+  .eyebrow{
+    font-family:"IBM Plex Mono",monospace; font-size:.7rem; font-weight:500;
+    letter-spacing:.14em; text-transform:uppercase; color:var(--accent-ink);
+    display:flex; gap:.6rem; align-items:baseline; flex-wrap:wrap;
+  }
+  .eyebrow span::before{content:"\00B7"; margin-right:.6rem; color:var(--faint);}
+  h1{
+    font-size:clamp(2.1rem,6vw,3.4rem); font-weight:700; line-height:1.02;
+    letter-spacing:-.025em; margin:.7rem 0 0; text-wrap:balance;
+  }
+  .standfirst{max-width:46ch; color:var(--muted); font-size:1.06rem; margin:.9rem 0 0;}
+
+  .clock{margin-top:2.2rem;}
+  .clock-label{
+    font-family:"IBM Plex Mono",monospace; font-size:.68rem; letter-spacing:.12em;
+    text-transform:uppercase; color:var(--faint); margin-bottom:.55rem;
+  }
+  .bar{display:flex; gap:3px; height:2.6rem;}
+  .seg{
+    flex-grow:var(--w); flex-basis:0; min-width:0;
+    background:var(--accent-soft); border-radius:2px;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    font-family:"IBM Plex Mono",monospace; line-height:1.1; color:var(--accent-ink);
+    overflow:hidden;
+  }
+  .seg.core{background:var(--accent); color:var(--on-accent);}
+  .seg b{font-size:.78rem; font-weight:600;}
+  .seg i{font-size:.6rem; font-style:normal; opacity:.75; letter-spacing:.05em;}
+
+  .block{
+    display:grid; grid-template-columns:7.5rem minmax(0,1fr);
+    gap:0 2rem; padding:2.2rem 0; border-bottom:1px solid var(--rule-soft);
+  }
+  .rail{position:sticky; top:1.2rem; align-self:start;}
+  .tc{
+    font-family:"IBM Plex Mono",monospace; font-size:1.35rem; font-weight:600;
+    letter-spacing:-.02em; font-variant-numeric:tabular-nums;
+  }
+  .dur{
+    font-family:"IBM Plex Mono",monospace; font-size:.68rem; color:var(--faint);
+    letter-spacing:.08em; margin-top:.15rem;
+  }
+  h2{font-size:1.42rem; font-weight:600; letter-spacing:-.015em; line-height:1.2; margin:0 0 .2rem; text-wrap:balance;}
+  .goal{font-family:"Archivo",sans-serif; font-size:.84rem; color:var(--muted); margin:0 0 1.1rem;}
+  .say{max-width:60ch;}
+  .say p{margin:0 0 .85rem;}
+  .say p:last-child{margin-bottom:0;}
+  .say em{color:var(--accent-ink); font-style:italic;}
+
+  ol.beats{list-style:none; padding:0; margin:0; counter-reset:beat;}
+  ol.beats > li{counter-increment:beat; position:relative; padding-left:2.1rem; margin-bottom:1rem; max-width:60ch;}
+  ol.beats > li:last-child{margin-bottom:0;}
+  ol.beats > li::before{
+    content:counter(beat); position:absolute; left:0; top:.22rem;
+    font-family:"IBM Plex Mono",monospace; font-size:.72rem; font-weight:600;
+    color:var(--accent-ink); background:var(--accent-soft);
+    width:1.45rem; height:1.45rem; border-radius:50%;
+    display:grid; place-items:center;
+  }
+  ol.beats strong{font-family:"Archivo",sans-serif; font-weight:600; font-size:.98rem;}
+
+  .data{display:flex; flex-wrap:wrap; gap:.4rem; margin-top:1.1rem;}
+  .chip{
+    font-family:"IBM Plex Mono",monospace; font-size:.74rem; font-variant-numeric:tabular-nums;
+    background:var(--paper); border:1px solid var(--rule); border-radius:3px;
+    padding:.3rem .55rem; box-shadow:var(--shadow);
+  }
+  .chip.hot{border-color:var(--alert); background:var(--alert-soft); color:var(--alert);}
+  .chip b{font-weight:600;}
+  .chip small{color:var(--faint); font-size:.9em; margin-left:.2rem;}
+  .chip.hot small{color:inherit; opacity:.8;}
+
+  .cue{
+    display:flex; gap:.7rem; align-items:baseline; margin-top:1.1rem;
+    font-family:"Archivo",sans-serif; font-size:.86rem; color:var(--muted);
+    border-left:2px solid var(--accent); padding-left:.85rem;
+  }
+  .cue b{
+    font-family:"IBM Plex Mono",monospace; font-size:.66rem; letter-spacing:.12em;
+    text-transform:uppercase; color:var(--accent-ink); flex:none;
+  }
+
+  .cmd{
+    font-family:"IBM Plex Mono",monospace; font-size:.8rem; line-height:1.7;
+    background:var(--paper); border:1px solid var(--rule); border-radius:4px;
+    padding:.7rem .9rem; margin-top:1.1rem; overflow-x:auto; white-space:pre;
+    box-shadow:var(--shadow);
+  }
+  .cmd .p{color:var(--faint);}
+
+  .appendix{margin-top:3.5rem;}
+  .appendix h2{
+    font-size:.78rem; font-family:"IBM Plex Mono",monospace; font-weight:500;
+    letter-spacing:.14em; text-transform:uppercase; color:var(--faint);
+    padding-bottom:.6rem; border-bottom:1px solid var(--rule); margin-bottom:1.4rem;
+  }
+  .qa{display:grid; gap:1.15rem; margin:0;}
+  .qa > div{max-width:70ch;}
+  .qa dt{font-family:"Archivo",sans-serif; font-weight:600; font-size:.97rem; margin-bottom:.2rem;}
+  .qa dd{margin:0; color:var(--muted); font-size:.97rem;}
+  code{font-family:"IBM Plex Mono",monospace; font-size:.85em;}
+
+  .rules{display:grid; gap:.75rem; grid-template-columns:repeat(auto-fit,minmax(16rem,1fr));}
+  .rule-card{
+    background:var(--paper); border:1px solid var(--rule); border-left:3px solid var(--warn);
+    border-radius:3px; padding:.9rem 1rem; font-size:.93rem; color:var(--muted);
+  }
+  .rule-card b{
+    display:block; font-family:"Archivo",sans-serif; font-size:.76rem; font-weight:600;
+    letter-spacing:.06em; text-transform:uppercase; color:var(--warn); margin-bottom:.3rem;
+  }
+
+  a{color:var(--accent-ink);}
+  :focus-visible{outline:2px solid var(--accent); outline-offset:2px; border-radius:2px;}
+
+  @media (max-width:720px){
+    .block{grid-template-columns:1fr; gap:.9rem;}
+    .rail{position:static; display:flex; gap:.7rem; align-items:baseline;}
+    .dur{margin-top:0;}
+    .seg i{display:none;}
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+<header>
+  <div class="eyebrow">Scaletta cronometrata<span>logAnalyzer2</span><span>pubblico SEO</span></div>
+  <h1>Cinque minuti di log</h1>
+  <p class="standfirst">Sei blocchi, tempi fissi. Il peso sta sul quarto: i numeri sono la dimostrazione, tutto il resto serve solo a poterli dire.</p>
+
+  <div class="clock">
+    <div class="clock-label">Dove vanno i 300 secondi</div>
+    <div class="bar">
+      <div class="seg" style="--w:40"><b>40&Prime;</b><i>aggancio</i></div>
+      <div class="seg" style="--w:40"><b>40&Prime;</b><i>cos'&egrave;</i></div>
+      <div class="seg" style="--w:60"><b>60&Prime;</b><i>tre idee</i></div>
+      <div class="seg core" style="--w:90"><b>90&Prime;</b><i>i numeri</i></div>
+      <div class="seg" style="--w:40"><b>40&Prime;</b><i>a cosa serve</i></div>
+      <div class="seg" style="--w:30"><b>30&Prime;</b><i>limiti</i></div>
+    </div>
+  </div>
+</header>
+
+<main>
+
+<section class="block">
+  <div class="rail"><div class="tc">0:00</div><div class="dur">40 SEC</div></div>
+  <div>
+    <h2>Apri con lo scraper travestito</h2>
+    <p class="goal">Obiettivo: far capire in una frase perch&eacute; i log vedono cose che nessun'altra fonte vede.</p>
+    <div class="say">
+      <p>&laquo;Lo user agent pi&ugrave; frequente sul mio sito negli ultimi tredici mesi &egrave; un Chrome su macOS. Due milioni di richieste. Non &egrave; un browser: sono 7.748 indirizzi IP che fanno 261 richieste a testa. Chrome vero, sullo stesso sito, ne fa 17.&raquo;</p>
+      <p>&laquo;&Egrave; il 27% del traffico. In Analytics non c'&egrave;, perch&eacute; i bot non eseguono JavaScript. In Search Console nemmeno, perch&eacute; l&igrave; c'&egrave; solo Google. Il log del server &egrave; l'unico posto dove si vede &mdash; e senza separarlo, qualunque confronto anno su anno di quel sito &egrave; privo di senso.&raquo;</p>
+    </div>
+    <div class="data">
+      <span class="chip"><b>2.026.397</b> <small>richieste</small></span>
+      <span class="chip"><b>7.748</b> <small>IP distinti</small></span>
+      <span class="chip hot"><b>261</b> <small>hit/IP &middot; Chrome vero: 17</small></span>
+      <span class="chip hot"><b>27%</b> <small>del traffico totale</small></span>
+    </div>
+  </div>
+</section>
+
+<section class="block">
+  <div class="rail"><div class="tc">0:40</div><div class="dur">40 SEC</div></div>
+  <div>
+    <h2>Cos'&egrave;, in due frasi</h2>
+    <p class="goal">Obiettivo: dire cosa fa senza raccontare l'architettura. Nessuno ti sta chiedendo com'&egrave; fatto dentro.</p>
+    <div class="say">
+      <p>&laquo;Prende gli access log di nginx e ne fa un report HTML. Un file solo: doppio clic, funziona offline, lo mandi al cliente per mail. Tutti i dati stanno dentro la pagina, non c'&egrave; un server dietro.&raquo;</p>
+      <p>&laquo;Multi-sito, un file di configurazione per dominio. Sette milioni e mezzo di righe, tredici mesi: la pipeline completa gira in poco pi&ugrave; di un minuto, perch&eacute; ogni stadio &egrave; incrementale &mdash; riscarica solo la coda del log attivo e ri-analizza solo quello che &egrave; cambiato.&raquo;</p>
+    </div>
+    <div class="cmd"><span class="p">$</span> python main.py run --site evemilano.com
+<span class="p">&rarr; output/log_analysis_evemilano_com_20250803-20260901.html &nbsp;&nbsp;3,8 MB</span></div>
+    <div class="data">
+      <span class="chip"><b>7.454.479</b> <small>righe di log</small></span>
+      <span class="chip"><b>13</b> <small>mesi</small></span>
+      <span class="chip"><b>64,9 s</b> <small>pipeline completa</small></span>
+      <span class="chip"><b>1</b> <small>file, zero installazioni per chi lo apre</small></span>
+    </div>
+    <div class="cue"><b>Mostra</b><span>il terminale mentre gira, oppure direttamente il file che si apre nel browser.</span></div>
+  </div>
+</section>
+
+<section class="block">
+  <div class="rail"><div class="tc">1:20</div><div class="dur">60 SEC</div></div>
+  <div>
+    <h2>Le tre idee che cambiano i numeri</h2>
+    <p class="goal">Obiettivo: venti secondi a punto. Sono le decisioni che separano questo da un <span class="mono">grep</span> sui log.</p>
+    <ol class="beats">
+      <li><strong>Lo user agent non &egrave; un'identit&agrave;.</strong> &Egrave; una stringa che il client sceglie: chiunque pu&ograve; scriverci &laquo;Googlebot&raquo;. L'unica prova &egrave; l'IP. Lo confronto con i range ufficiali pubblicati &mdash; Google, Bing, OpenAI, Anthropic, Perplexity, Apple, Ahrefs &mdash; e per chi non li pubblica uso il rDNS con conferma in avanti. Il verdetto &egrave; sulla coppia IP + bot dichiarato, non sull'IP: lo stesso indirizzo pu&ograve; ospitare un bot vero e uno che ne usurpa il nome.</li>
+      <li><strong>Le sonde si marcano, non si buttano.</strong> Un quarto delle richieste sono scanner che cercano <span class="mono">.env</span>, <span class="mono">.git</span>, <span class="mono">wp-login.php</span>. &Egrave; traffico vero e dice cose vere sul sito, ma se resta dentro, &laquo;top URI&raquo; e &laquo;crawl waste&raquo; finiscono dominati da URL che non esistono. Due colonne distinte: <em>&egrave; una sonda</em> &mdash; esclusa dalle viste SEO &mdash; e <em>&egrave; ostile</em>, che &egrave; un'altra cosa: <span class="mono">wp-cron.php</span> &egrave; rumore, non un attacco.</li>
+      <li><strong>La &laquo;sezione&raquo; non &egrave; il primo pezzo dell'URL.</strong> Preso alla lettera, il primo segmento ha 35.338 valori distinti, quasi tutti inventati dagli scanner: una dimensione con quella cardinalit&agrave; non &egrave; pivotabile. La sezione arriva da una allowlist scritta per sito.</li>
+    </ol>
+  </div>
+</section>
+
+<section class="block">
+  <div class="rail"><div class="tc">2:20</div><div class="dur">90 SEC &middot; CUORE</div></div>
+  <div>
+    <h2>I cinque numeri</h2>
+    <p class="goal">Obiettivo: qui sta tutto il valore. Report aperto, scorri mentre parli. Se sei in ritardo, tieni 1, 4 e 5.</p>
+    <ol class="beats">
+      <li><strong>12.875 IP dichiarano di essere Googlebot. Lo sono in 374.</strong> Su ChatGPT-User il rapporto &egrave; pi&ugrave; equilibrato ma peggiore in valore assoluto: 1.188 veri contro 1.058 falsi. Chi non fa questa verifica sta contando anche i finti.</li>
+      <li><strong>Il 24,3% delle richieste sono sonde</strong>, di cui 1.280.325 ostili: 452.513 ricognizioni e 320.687 tentativi di brute force sul solo <span class="mono">wp-login.php</span>.</li>
+      <li><strong>Bytespider fa 8.095 richieste su percorsi da scanner.</strong> Un crawler AI che si comporta da ricognizione. Non lo scopri leggendo il robots.txt.</li>
+      <li><strong>184 dei 578 URL che Google conosce non ricevono Googlebot verificato da oltre 30 giorni</strong> &mdash; il 31,8% &mdash; e valgono 217.553 impression. In cima ci sono pagine commerciali: <span class="mono">/servizi-web-marketing/</span>, 30.829 impression, ferma da 57 giorni.</li>
+      <li><strong>Di quei 184, ce ne sono 75 che nei log non compaiono affatto.</strong> Hanno impression in Search Console e in tredici mesi il server non ha mai ricevuto una richiesta per loro. &Egrave; il tipo di domanda che solo l'incrocio log + Search Console sa porre.</li>
+    </ol>
+    <div class="cue"><b>Mostra</b><span>la sezione &laquo;Freschezza del crawl&raquo; e la tabella URL con la colonna &laquo;Googlebot: gg fa&raquo;.</span></div>
+  </div>
+</section>
+
+<section class="block">
+  <div class="rail"><div class="tc">3:50</div><div class="dur">40 SEC</div></div>
+  <div>
+    <h2>A cosa serve, in pratica</h2>
+    <p class="goal">Obiettivo: tradurre i numeri in quattro cose che un SEO fa il luned&igrave; mattina.</p>
+    <div class="say">
+      <p><strong>Crawl budget vero.</strong> Quanto Googlebot <em>verificato</em> spende in 404, 5xx e URL con query string. I 4xx dei bot confermati sono budget buttato via, e si vede quale sezione se lo mangia.</p>
+      <p><strong>Copertura AI.</strong> Quanti URL <em>distinti</em> ha raggiunto ciascun agente, con la distinzione che conta: chi addestra un modello, chi alimenta l'indice di un motore di risposta, e chi va a prendere una pagina adesso perch&eacute; un utente l'ha appena chiesta. Sono tre economie diverse.</p>
+      <p><strong>Freschezza e orfani.</strong> Gli URL che Google conosce ma che il crawler non tocca da settimane, ordinati per impression in gioco.</p>
+      <p><strong>Log e Search Console sullo stesso periodo.</strong> Click e impression accanto agli hit di Googlebot, sulla stessa riga, per lo stesso URL.</p>
+    </div>
+  </div>
+</section>
+
+<section class="block">
+  <div class="rail"><div class="tc">4:30</div><div class="dur">30 SEC</div></div>
+  <div>
+    <h2>Chiudi sui limiti</h2>
+    <p class="goal">Obiettivo: dichiararli tu prima che te li chiedano. &Egrave; la parte che fa fidare il pubblico di tutto il resto.</p>
+    <div class="say">
+      <p>&laquo;Serve accesso SSH al server e nessuna CDN davanti, altrimenti l'IP nel log &egrave; quello della CDN e tutta la verifica salta. Se il vhost non logga gli asset, il rapporto HTML contro asset non esiste &mdash; e la pagina lo scrive, invece di mostrare una sezione vuota.&raquo;</p>
+      <p>&laquo;E siccome i dati nel report sono pre-aggregati, alcuni incroci non sono rappresentabili. Quando succede il widget lo dichiara: <em>filtri non applicati qui</em>. L'unica cosa che questo report non deve fare &egrave; mostrare un numero non filtrato senza dirlo.&raquo;</p>
+      <p>&laquo;Se avete accesso SSH a un server nginx, questa &egrave; l'unica analisi che vi dice chi vi sta davvero visitando.&raquo;</p>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<section class="appendix">
+  <h2>Domande che ti faranno</h2>
+  <dl class="qa">
+    <div><dt>&laquo;Perch&eacute; non basta GA4?&raquo;</dt><dd>GA4 &egrave; JavaScript nel browser. I bot non lo eseguono: per costruzione non pu&ograve; vedere niente di quello che ho mostrato.</dd></div>
+    <div><dt>&laquo;Funziona con Apache? E con Cloudflare davanti?&raquo;</dt><dd>Con Apache s&igrave; in linea di principio: il parser si genera dalla stringa <code>log_format</code>, non &egrave; cablato nel codice. Con una CDN davanti no, oggi: servirebbe leggere l'IP reale dall'header, e non &egrave; implementato.</dd></div>
+    <div><dt>&laquo;Come fai a sapere che i numeri sono giusti?&raquo;</dt><dd>La pagina si autoverifica. Il generatore calcola alcuni totali in Python riga per riga e li spedisce dentro il file; al caricamento la pagina li ricalcola con il proprio motore e li confronta. Se non tornano, lo scrive in pagina invece di mostrare un totale sbagliato.</dd></div>
+    <div><dt>&laquo;Quanto pesa il report?&raquo;</dt><dd>3,8 MB per tredici mesi. I dati viaggiano compressi dentro la pagina e si decomprimono nel browser: senza compressione sarebbero 19 MB.</dd></div>
+    <div><dt>&laquo;E i 75 URL che stanno in GSC ma non nei log?&raquo;</dt><dd>&Egrave; la domanda giusta, e non ho ancora la risposta per tutti. Candidati: redirect serviti da un altro layer, richieste escluse dal log nel vhost, o URL che Google ha in indice ma che nessuno chiede mai. Va guardato caso per caso.</dd></div>
+  </dl>
+</section>
+
+<section class="appendix">
+  <h2>Regole del tempo</h2>
+  <div class="rules">
+    <div class="rule-card"><b>Se sfori</b>Taglia il blocco delle tre idee da tre punti a due: tieni la verifica dell'IP e le sonde. La allowlist delle sezioni &egrave; la meno interessante per chi ascolta.</div>
+    <div class="rule-card"><b>Non tagliare mai</b>Il blocco dei numeri. Se resti con novanta secondi in tutto, di' solo lo scraper al 27%, i 12.875 falsi Googlebot e i 75 URL fantasma.</div>
+    <div class="rule-card"><b>Se avanzi</b>Racconta la trappola della rotazione: <code>.log.2</code> copre nov&ndash;dic 2025 e <code>.2.gz</code> copre giu&ndash;lug 2026. Ordinare i file per nome costruisce una timeline sbagliata. Piace a chiunque abbia mai fatto <code>zcat *.gz</code>.</div>
+    <div class="rule-card"><b>Non fare</b>La pipeline stadio per stadio. Otto comandi su una slide non li ricorda nessuno, e ti mangiano i novanta secondi che valgono davvero.</div>
+  </div>
+</section>
+
+</div>
+</body>
+</html>

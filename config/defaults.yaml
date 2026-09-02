@@ -1,0 +1,61 @@
+# Default globali, sovrascrivibili per sito in config/sites/<domain>.yaml
+# Corrispondono alla tabella "Parametri da fissare" di prompt.md §7.
+
+report:
+  # N giorni per considerare un URL "mai visitato da Googlebot"
+  googlebot_stale_days: 30
+  # Confronto crawl budget: periodo precedente di pari durata
+  compare_previous_period: true
+  # Tetto del JSON embedded nel report, in byte.
+  # Il payload porta tutti gli assi del filtro su ogni cubo: e la ragione per
+  # cui e passato da 5 a 24 MB. Il FILE resta piu piccolo di prima perche
+  # `compress_payload` e attivo di default e questi interi comprimono 7x.
+  json_budget_bytes: 25165824
+  # Incorpora il JSON come gzip+base64. Con payload di questa taglia non e
+  # un'opzione: senza, il file passa da ~3 a ~19 MB.
+  compress_payload: true
+  # Lunghezza delle classifiche "top N"
+  top_n: 25
+  # Chiavi candidate serializzate per ogni classifica di user agent, IP e
+  # referer. Il front-end ne ri-ordina `top_n` sotto filtro: piu ampio e il
+  # pool, piu e probabile che una voce che emerge solo sotto un filtro stretto
+  # sia rappresentata. Misurato: 25 chiavi = 35.000 celle, 150 = 156.000.
+  top_pool: 75
+  # Categorie di `bots.yaml` che la sezione sui bot AI considera proprie.
+  ai_categories:
+    - AI bot
+    - AI Agents bot
+  # Finestra di default quando non si passa --all / --latest
+  window: all            # all | latest
+  # Numero di URL nel dizionario D_url prima della scala di degradazione
+  url_dict_size: 12000
+
+dns:
+  # TTL della cache dei verdetti rDNS, in giorni
+  cache_ttl_days: 30
+  # Timeout di una singola lookup, in secondi
+  timeout_seconds: 3
+  # Lookup concorrenti
+  max_workers: 50
+  # Tentativi per lookup prima di dichiarare DNS_ERROR
+  retries: 2
+
+# Soglie per marcare uno user agent "da browser" come automa travestito.
+# Il segnale è la concentrazione: un browser vero ha molti IP e poche
+# richieste per IP. Su evemilano Chrome sta a 17 richieste per indirizzo,
+# lo scraper travestito da Chrome a 261.
+anomaly:
+  min_hits: 10000
+  min_hits_per_ip: 50
+
+gsc:
+  # Ritardo di consolidamento dei dati Search Console, in giorni.
+  # Gli ultimi N giorni della finestra vengono marcati "non consolidato"
+  # invece di essere letti come un calo.
+  data_delay_days: 3
+
+fetch:
+  # Byte iniziali usati per il fingerprint di identità di un file remoto
+  fingerprint_bytes: 4096
+  # Timeout di una singola invocazione ssh, in secondi
+  ssh_timeout_seconds: 600

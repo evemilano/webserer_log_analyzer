@@ -1,0 +1,584 @@
+# Classificazione degli user agent.
+#
+# Le regole si valutano NELL'ORDINE DI QUESTO FILE e il primo match vince.
+# L'ordine non è estetico: `Googlebot-Image` deve precedere `Googlebot`,
+# `AhrefsSiteAudit` deve precedere `AhrefsBot`, e le firme dei fetcher AI
+# on-demand devono precedere quelle dei crawler di training, altrimenti
+# ChatGPT-User finirebbe classificato come GPTBot.
+#
+# `category` è una delle sei previste dallo spec:
+#   Browser | Search engine bot | AI bot | AI Agents bot | Python bot | General bot
+#
+# Dentro `AI bot` la distinzione che conta per la SEO è `subcategory`:
+#   training      il contenuto finisce in un dataset di addestramento
+#   answer-index  il contenuto alimenta l'indice di un motore di risposta
+# I fetcher innescati da un utente stanno in `AI Agents bot` (subcategory
+# `on-demand`): non crawlano, vanno a prendere una pagina che qualcuno ha
+# chiesto in quel momento. Sono tre comportamenti economicamente diversi.
+#
+# `verify.ip_sources` elenca gli id di config/bot_sources.yaml che possono
+# provare l'identità; `verify.rdns_suffixes` i domini attesi nel PTR per la
+# verifica forward-confirmed. Una regola senza `verify` produce UNVERIFIABLE:
+# è un esito onesto, non un errore.
+#
+# I conteggi nei commenti sono gli hit misurati su evemilano.com nei 13 mesi
+# di log (7,45M righe), per dare un'idea di cosa pesa davvero.
+
+# Le regex si applicano senza distinzione di maiuscole salvo `case_sensitive: true`
+# sulla singola regola: nella pratica gli user agent variano nella capitalizzazione,
+# e i bot che si camuffano lo fanno anche storpiando il nome (`Mozlila/5.0`).
+case_insensitive: true
+
+# Se nessuna regola matcha, si decide fra i due fallback in base a questa regex:
+# uno user agent che si annuncia come bot è un bot sconosciuto, gli altri sono
+# browser non riconosciuti.
+fallback_bot_hint: 'bot|crawl|spider|slurp|scrape|fetch|http-?client|libwww|www-mechanize|headless'
+
+fallback_bot:
+  name: "Bot non riconosciuto"
+  category: "General bot"
+
+fallback_browser:
+  name: "Browser (altro)"
+  category: "Browser"
+
+no_user_agent:
+  name: "Senza user agent"
+  category: "General bot"
+
+rules:
+
+  # =======================================================================
+  # AI — fetcher on-demand (innescati da un utente, non crawler)
+  # =======================================================================
+
+  - id: chatgpt_user
+    ua_regex: 'ChatGPT-User'
+    name: ChatGPT-User                       # 69.255 hit
+    category: AI Agents bot
+    subcategory: on-demand
+    verify:
+      ip_sources: [openai_chatgpt_user, openai_chatgpt_agents, openai_chatgpt_connectors]
+
+  - id: openai_operator
+    ua_regex: 'OpenAI-Operator|OpenAI-Agent'
+    name: OpenAI-Operator
+    category: AI Agents bot
+    subcategory: on-demand
+    verify:
+      ip_sources: [openai_chatgpt_agents]
+
+  - id: claude_user
+    ua_regex: 'Claude-User'
+    name: Claude-User
+    category: AI Agents bot
+    subcategory: on-demand
+    verify:
+      ip_sources: [anthropic]
+
+  - id: perplexity_user
+    ua_regex: 'Perplexity-User'
+    name: Perplexity-User
+    category: AI Agents bot
+    subcategory: on-demand
+    verify:
+      ip_sources: [perplexity_user]
+
+  - id: duckassist
+    ua_regex: 'DuckAssistBot'
+    name: DuckAssistBot                      # 1.449 hit
+    category: AI Agents bot
+    subcategory: on-demand
+    verify:
+      ip_sources: [duckduckgo]
+
+  - id: google_agent_mariner
+    ua_regex: 'GoogleAgent-Mariner|Google-CloudVertexBot'
+    name: GoogleAgent-Mariner
+    category: AI Agents bot
+    subcategory: on-demand
+    verify:
+      ip_sources: [google_user_triggered_agents, google_user_triggered]
+
+  - id: meta_external_fetcher
+    ua_regex: 'meta-externalfetcher'
+    name: Meta-ExternalFetcher
+    category: AI Agents bot
+    subcategory: on-demand
+
+  # =======================================================================
+  # AI — crawler per indice di risposta
+  # =======================================================================
+
+  - id: oai_searchbot
+    ua_regex: 'OAI-SearchBot'
+    name: OAI-SearchBot                      # 32.659 hit
+    category: AI bot
+    subcategory: answer-index
+    verify:
+      ip_sources: [openai_searchbot]
+
+  - id: perplexity_bot
+    ua_regex: 'PerplexityBot'
+    name: PerplexityBot                      # 3.675 hit
+    category: AI bot
+    subcategory: answer-index
+    verify:
+      ip_sources: [perplexity_bot]
+
+  - id: claude_searchbot
+    ua_regex: 'Claude-SearchBot'
+    name: Claude-SearchBot                   # 1.483 hit
+    category: AI bot
+    subcategory: answer-index
+    verify:
+      ip_sources: [anthropic]
+
+  - id: amazon_searchbot
+    ua_regex: 'Amzn-SearchBot'
+    name: Amzn-SearchBot                     # 1.226 hit
+    category: AI bot
+    subcategory: answer-index
+
+  # =======================================================================
+  # AI — crawler di training
+  # =======================================================================
+
+  - id: gptbot
+    ua_regex: 'GPTBot'
+    name: GPTBot                             # 54.996 hit
+    category: AI bot
+    subcategory: training
+    verify:
+      ip_sources: [openai_gptbot]
+
+  - id: claudebot
+    ua_regex: 'ClaudeBot|anthropic-ai'
+    name: ClaudeBot                          # 12.519 hit
+    category: AI bot
+    subcategory: training
+    verify:
+      ip_sources: [anthropic]
+
+  - id: google_extended
+    ua_regex: 'Google-Extended'
+    name: Google-Extended
+    category: AI bot
+    subcategory: training
+    verify:
+      ip_sources: [google_common]
+
+  - id: applebot_extended
+    ua_regex: 'Applebot-Extended'
+    name: Applebot-Extended
+    category: AI bot
+    subcategory: training
+    verify:
+      ip_sources: [apple]
+
+  - id: amazonbot
+    ua_regex: 'Amazonbot'
+    name: Amazonbot                          # 116.161 hit
+    category: AI bot
+    subcategory: training
+
+  - id: bytespider
+    ua_regex: 'Bytespider|ByteDance'
+    name: Bytespider                         # 14.905 hit
+    category: AI bot
+    subcategory: training
+
+  - id: meta_external_agent
+    ua_regex: 'meta-externalagent|FacebookBot'
+    name: Meta-ExternalAgent                 # 17.854 hit
+    category: AI bot
+    subcategory: training
+
+  - id: ccbot
+    ua_regex: 'CCBot'
+    name: CCBot                              # 1.068 hit
+    category: AI bot
+    subcategory: training
+
+  - id: cohere
+    ua_regex: 'cohere-(ai|training-data-crawler)'
+    name: Cohere
+    category: AI bot
+    subcategory: training
+
+  - id: timpibot
+    ua_regex: 'Timpibot'
+    name: Timpibot                           # 7.979 hit
+    category: AI bot
+    subcategory: training
+
+  - id: ai_misc
+    ua_regex: 'Diffbot|omgili|Webzio|ImagesiftBot|YouBot|Kangaroo Bot|AI2Bot|Ai2Bot-Dolma|Applebot-Extended|PanguBot|Devin|MistralAI'
+    name: Altri crawler AI
+    category: AI bot
+    subcategory: training
+
+  # =======================================================================
+  # Motori di ricerca
+  # =======================================================================
+  # Attenzione all'ordine: le varianti con suffisso vanno prima della base.
+
+  - id: googlebot_image
+    ua_regex: 'Googlebot-Image'
+    name: Googlebot-Image
+    category: Search engine bot
+    verify:
+      ip_sources: [google_common]
+      rdns_suffixes: ['.googlebot.com', '.google.com']
+
+  - id: googlebot_news
+    ua_regex: 'Googlebot-News'
+    name: Googlebot-News
+    category: Search engine bot
+    verify:
+      ip_sources: [google_common]
+      rdns_suffixes: ['.googlebot.com', '.google.com']
+
+  - id: googlebot_video
+    ua_regex: 'Googlebot-Video'
+    name: Googlebot-Video
+    category: Search engine bot
+    verify:
+      ip_sources: [google_common]
+      rdns_suffixes: ['.googlebot.com', '.google.com']
+
+  - id: adsbot_google_mobile
+    ua_regex: 'AdsBot-Google-Mobile'
+    name: AdsBot-Google-Mobile                # 2.989 hit
+    category: Search engine bot
+    verify:
+      ip_sources: [google_special]
+      rdns_suffixes: ['.googlebot.com', '.google.com']
+
+  - id: adsbot_google
+    ua_regex: 'AdsBot-Google'
+    name: AdsBot-Google                       # 1.006 hit
+    category: Search engine bot
+    verify:
+      ip_sources: [google_special]
+      rdns_suffixes: ['.googlebot.com', '.google.com']
+
+  - id: mediapartners
+    ua_regex: 'Mediapartners-Google'
+    name: Mediapartners-Google
+    category: Search engine bot
+    verify:
+      ip_sources: [google_special]
+      rdns_suffixes: ['.googlebot.com', '.google.com']
+
+  - id: google_inspection
+    ua_regex: 'Google-InspectionTool|Google Site Verifier|Google-Site-Verification'
+    name: Google-InspectionTool
+    category: Search engine bot
+    verify:
+      ip_sources: [google_common, google_user_triggered_google]
+
+  - id: feedfetcher_google
+    ua_regex: 'FeedFetcher-Google|Google-Read-Aloud|APIs-Google'
+    name: Google (altri fetcher)              # 2.660 hit
+    category: Search engine bot
+    verify:
+      ip_sources: [google_user_triggered, google_user_triggered_google]
+
+  - id: google_other
+    ua_regex: 'GoogleOther|Storebot-Google|Google-Safety'
+    name: GoogleOther
+    category: Search engine bot
+    verify:
+      ip_sources: [google_common, google_special]
+
+  - id: googlebot
+    ua_regex: 'Googlebot'
+    name: Googlebot                           # 323.114 hit — il crawler che conta
+    category: Search engine bot
+    verify:
+      ip_sources: [google_common]
+      rdns_suffixes: ['.googlebot.com', '.google.com']
+
+  - id: bingbot
+    ua_regex: 'bingbot|BingPreview|adidxbot|MicrosoftPreview'
+    name: bingbot                             # 41.218 hit
+    category: Search engine bot
+    verify:
+      ip_sources: [bing]
+      rdns_suffixes: ['.search.msn.com']
+
+  - id: applebot
+    ua_regex: 'Applebot'
+    name: Applebot                            # 35.876 hit
+    category: Search engine bot
+    verify:
+      ip_sources: [apple]
+      rdns_suffixes: ['.applebot.apple.com']
+
+  - id: duckduckbot
+    ua_regex: 'DuckDuckBot|DuckDuckGo-Favicons-Bot'
+    name: DuckDuckBot                         # 1.095 hit
+    category: Search engine bot
+    verify:
+      ip_sources: [duckduckgo]
+
+  - id: yandex
+    ua_regex: 'YandexBot|YandexImages|YandexAccessibilityBot|YandexRenderResourcesBot'
+    name: YandexBot                           # 1.580 hit
+    category: Search engine bot
+    verify:
+      # Yandex non pubblica range: resta solo il rDNS forward-confirmed.
+      rdns_suffixes: ['.yandex.ru', '.yandex.net', '.yandex.com']
+
+  - id: baidu
+    ua_regex: 'Baiduspider'
+    name: Baiduspider
+    category: Search engine bot
+    verify:
+      rdns_suffixes: ['.crawl.baidu.com', '.baidu.jp', '.crawl.baidu.jp']
+
+  - id: seznam
+    ua_regex: 'SeznamBot'
+    name: SeznamBot                           # 2.328 hit
+    category: Search engine bot
+
+  - id: qwant
+    ua_regex: 'Qwantbot|Qwantify'
+    name: Qwantbot                            # 1.178 hit
+    category: Search engine bot
+
+  - id: petal
+    ua_regex: 'PetalBot|AspiegelBot'
+    name: PetalBot                            # 816 hit
+    category: Search engine bot
+
+  - id: mojeek
+    ua_regex: 'MojeekBot'
+    name: MojeekBot                           # 5.049 hit
+    category: Search engine bot
+
+  - id: seekport
+    ua_regex: 'SeekportBot'
+    name: SeekportBot                         # 6.032 hit
+    category: Search engine bot
+
+  - id: search_misc
+    ua_regex: 'Slurp|Exabot|Gigabot|ia_archiver|archive\.org_bot|Neevabot|Marginalia'
+    name: Altri motori
+    category: Search engine bot
+
+  # =======================================================================
+  # Tool SEO e backlink
+  # =======================================================================
+
+  - id: ahrefs_site_audit
+    ua_regex: 'AhrefsSiteAudit'
+    name: AhrefsSiteAudit                     # 86.674 hit
+    category: General bot
+    verify:
+      ip_sources: [ahrefs]
+
+  - id: ahrefs
+    ua_regex: 'AhrefsBot'
+    name: AhrefsBot                           # 68.929 hit
+    category: General bot
+    verify:
+      ip_sources: [ahrefs]
+
+  - id: semrush_variants
+    ua_regex: 'SemrushBot-(BA|SI|SWA|CT|BM|EO|OCOB|FT)'
+    name: SemrushBot (varianti)               # ~8.000 hit
+    category: General bot
+
+  - id: semrush
+    ua_regex: 'SemrushBot|Semrush'
+    name: SemrushBot                          # 22.300 hit
+    category: General bot
+
+  - id: mj12
+    ua_regex: 'MJ12bot'
+    name: MJ12bot                             # 55.920 hit
+    category: General bot
+
+  - id: dotbot
+    ua_regex: 'DotBot|rogerbot'
+    name: DotBot (Moz)                        # 12.735 hit
+    category: General bot
+
+  - id: screaming_frog
+    ua_regex: 'Screaming Frog'
+    name: Screaming Frog                      # 99.638 hit da 16 IP
+    category: General bot
+
+  - id: dataforseo
+    ua_regex: 'DataForSeoBot'
+    name: DataForSeoBot                       # 4.211 hit
+    category: General bot
+
+  - id: serpstat
+    ua_regex: 'serpstatbot'
+    name: serpstatbot                         # 4.042 hit
+    category: General bot
+
+  - id: seranking
+    ua_regex: 'SERankingBacklinksBot|SERanking'
+    name: SERanking                           # 1.926 hit
+    category: General bot
+
+  - id: seo_misc
+    ua_regex: 'BLEXBot|Majestic|MJ12|SEOkicks|Sistrix|SEOlyt|LinkpadBot|BacklinkCrawler|SEBot-WA|DomainStatsBot|BitSightBot|ZoominfoBot|GenomeCrawlerd|trendictionbot|VelenPublicWebCrawler|BrightEdge|Barkrowler|Cocolyzebot|awario|Onalytica'
+    name: Altri tool SEO/monitoraggio
+    category: General bot
+
+  # =======================================================================
+  # Social e anteprime link
+  # =======================================================================
+
+  - id: slackbot
+    ua_regex: 'Slackbot|Slack-ImgProxy'
+    name: Slackbot                            # 20.237 hit
+    category: General bot
+
+  - id: facebook
+    # meta-webindexer porta un token Chrome/ nello user agent: senza questa
+    # riga finirebbe fra i browser. Su store.lemanicasa.com vale 1.702 hit
+    # al giorno, e l'URL che dichiara e` la doc del crawler di Facebook.
+    ua_regex: 'facebookexternalhit|Facebot|meta-webindexer'
+    name: Facebook                            # 3.629 hit
+    category: General bot
+
+  - id: twitter
+    ua_regex: 'Twitterbot'
+    name: Twitterbot                          # 1.506 hit
+    category: General bot
+
+  - id: pinterest
+    ua_regex: 'Pinterest'
+    name: Pinterestbot                        # 7.058 hit
+    category: General bot
+
+  - id: social_misc
+    ua_regex: 'LinkedInBot|WhatsApp|TelegramBot|Discordbot|redditbot|Snapchat|Mastodon|Bluesky'
+    name: Altri social
+    category: General bot
+
+  # =======================================================================
+  # Feed reader
+  # =======================================================================
+
+  - id: feed_readers
+    ua_regex: 'Feedly|FreshRSS|Feedbin|NewsBlur|Inoreader|feedbot|feed-fetcher|Tiny Tiny RSS|Miniflux|RSS'
+    name: Feed reader                         # ~25.000 hit
+    category: General bot
+
+  # =======================================================================
+  # Bot vari ad alto volume su questo sito
+  # =======================================================================
+
+  - id: linkupbot
+    ua_regex: 'LinkupBot'
+    name: LinkupBot                           # 56.247 hit da 14 IP
+    category: General bot
+
+  - id: iboubot
+    ua_regex: 'IbouBot'
+    name: IbouBot                             # 35.185 hit
+    category: General bot
+
+  - id: shapbot
+    ua_regex: 'ShapBot'
+    name: ShapBot                             # 12.792 hit
+    category: General bot
+
+  # I primi due si travestono da Chrome e senza queste righe entrerebbero
+  # nel traffico "browser": misurati su store.lemanicasa.com, 1.915 e 948
+  # hit al giorno. proxyFactory non si traveste, ma non si dichiara nemmeno.
+  - id: geedo
+    ua_regex: 'GeedoShopProductFinder|Geedo'
+    name: Geedo Shop
+    category: General bot
+
+  - id: sleepbot
+    ua_regex: 'SleepBot'
+    name: SleepBot
+    category: General bot
+
+  - id: proxy_factory
+    ua_regex: '^proxyFactory$'
+    name: proxyFactory
+    category: General bot
+
+  # =======================================================================
+  # Scanner di sicurezza e ricognizione
+  # =======================================================================
+  # Non sono "attacchi" di per sé, ma non sono nemmeno traffico utile.
+  # Il flag is_attack_probe, calcolato sul path, è una cosa diversa e
+  # indipendente da questa classificazione.
+
+  - id: security_scanners
+    ua_regex: 'zgrab|masscan|nmap|Nuclei|sqlmap|WPScan|Nikto|CensysInspect|InternetMeasurement|Expanse|paloaltonetworks|Odin|NetSystemsResearch|Zabbix|l9explore|CheckMarkNetwork'
+    name: Scanner di sicurezza
+    category: General bot
+
+  # =======================================================================
+  # Librerie e client automatici
+  # =======================================================================
+
+  - id: python_clients
+    ua_regex: 'python-requests|Python-urllib|aiohttp|httpx|Scrapy|urllib3|python-httpx'
+    name: Client Python
+    category: Python bot
+
+  - id: http_libs
+    ua_regex: '^curl/|^Wget|Go-http-client|okhttp|axios|node-fetch|libwww-perl|Java/|Apache-HttpClient|Guzzle|PostmanRuntime|Dart/|got \(|reqwest'
+    name: Libreria HTTP                       # curl 322.564 hit da 53 IP
+    category: General bot
+
+  - id: uptime_monitors
+    ua_regex: 'UptimeRobot|Pingdom|StatusCake|Site24x7|NewRelicPinger|Better Uptime|Datadog|hetrixtools'
+    name: Monitoraggio uptime
+    category: General bot
+
+  # =======================================================================
+  # Browser — sempre per ultimi, dopo tutte le firme di bot
+  # =======================================================================
+  # Collassati a famiglia senza versione: gli user agent distinti sui 13 mesi
+  # sono 529.968, tenerli per versione renderebbe la dimensione inutilizzabile.
+  # L'ordine conta anche qui: Edge e Opera si dichiarano anche Chrome, Chrome
+  # si dichiara anche Safari.
+
+  - id: browser_edge
+    ua_regex: 'Edg[eA]?/'
+    name: Edge
+    category: Browser
+
+  - id: browser_opera
+    ua_regex: 'OPR/|Opera'
+    name: Opera
+    category: Browser
+
+  - id: browser_samsung
+    ua_regex: 'SamsungBrowser'
+    name: Samsung Internet
+    category: Browser
+
+  - id: browser_firefox
+    ua_regex: 'Firefox/|FxiOS'
+    name: Firefox
+    category: Browser
+
+  - id: browser_chrome
+    ua_regex: 'Chrome/|CriOS|Chromium'
+    name: Chrome
+    category: Browser
+
+  - id: browser_safari
+    ua_regex: 'Safari/'
+    name: Safari
+    category: Browser
+
+  - id: browser_legacy
+    ua_regex: 'MSIE |Trident/'
+    name: Internet Explorer
+    category: Browser

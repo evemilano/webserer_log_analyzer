@@ -1,0 +1,190 @@
+# Sorgenti ufficiali degli IP range dei bot.
+#
+# Tutte verificate raggiungibili il 2026-09-01. Gli URL cambiano nel tempo: se
+# un download fallisce si usa lo snapshot in cache/ip_sources/, e il report
+# segnala la fonte come non aggiornata invece di perderla in silenzio.
+#
+# `trust` ha due soli valori e decide se una fonte può produrre un VERIFIED:
+#   identity  la fonte prova l'identità: quel prefisso appartiene a quel crawler
+#   hint      il prefisso dice solo dove è ospitato l'IP, non chi è
+#
+# `parser` indica la forma del JSON:
+#   google_prefixes  {"prefixes": [{"ipv4Prefix"|"ipv6Prefix": "..."}]}
+#   aws_prefixes     {"prefixes": [{"ip_prefix", "service"}], "ipv6_prefixes": [...]}
+#   plain_cidr       lista di stringhe CIDR
+
+sources:
+
+  # --- Google ------------------------------------------------------------
+  # I file di Google non dicono quale prefisso appartiene a quale crawler:
+  # sono liste per categoria, ed è così che Google stesso prescrive di usarle.
+
+  - id: google_common
+    url: https://developers.google.com/static/crawling/ipranges/common-crawlers.json
+    parser: google_prefixes
+    owner: Google
+    category: Search engine bot
+    trust: identity
+    bots: [Googlebot, Googlebot-Image, Googlebot-News, Googlebot-Video, Storebot-Google, GoogleOther, Google-Extended]
+
+  - id: google_special
+    url: https://developers.google.com/static/crawling/ipranges/special-crawlers.json
+    parser: google_prefixes
+    owner: Google
+    category: Search engine bot
+    trust: identity
+    bots: [AdsBot-Google, Mediapartners-Google, APIs-Google, Google-Safety]
+
+  - id: google_user_triggered
+    url: https://developers.google.com/static/crawling/ipranges/user-triggered-fetchers.json
+    parser: google_prefixes
+    owner: Google
+    category: AI Agents bot
+    trust: identity
+    bots: [Google-Site-Verifier, Feedfetcher-Google, Google-Read-Aloud, GoogleAgent-Mariner]
+
+  - id: google_user_triggered_google
+    url: https://developers.google.com/static/crawling/ipranges/user-triggered-fetchers-google.json
+    parser: google_prefixes
+    owner: Google
+    category: AI Agents bot
+    trust: identity
+    bots: [Google-Site-Verifier, Google-Read-Aloud]
+
+  - id: google_user_triggered_agents
+    url: https://developers.google.com/static/crawling/ipranges/user-triggered-agents.json
+    parser: google_prefixes
+    owner: Google
+    category: AI Agents bot
+    trust: identity
+    bots: [Google-CloudVertexBot, GoogleAgent-Mariner]
+
+  # --- Microsoft ---------------------------------------------------------
+
+  - id: bing
+    url: https://www.bing.com/toolbox/bingbot.json
+    parser: google_prefixes
+    owner: Microsoft
+    category: Search engine bot
+    trust: identity
+    bots: [bingbot, BingPreview, adidxbot, MicrosoftPreview]
+
+  # --- OpenAI ------------------------------------------------------------
+
+  - id: openai_gptbot
+    url: https://openai.com/gptbot.json
+    parser: google_prefixes
+    owner: OpenAI
+    category: AI bot
+    trust: identity
+    bots: [GPTBot]
+
+  - id: openai_searchbot
+    url: https://openai.com/searchbot.json
+    parser: google_prefixes
+    owner: OpenAI
+    category: AI bot
+    trust: identity
+    bots: [OAI-SearchBot]
+
+  - id: openai_chatgpt_user
+    url: https://openai.com/chatgpt-user.json
+    parser: google_prefixes
+    owner: OpenAI
+    category: AI Agents bot
+    trust: identity
+    bots: [ChatGPT-User]
+
+  - id: openai_chatgpt_agents
+    url: https://openai.com/chatgpt-agents.json
+    parser: google_prefixes
+    owner: OpenAI
+    category: AI Agents bot
+    trust: identity
+    bots: [ChatGPT-User, OpenAI-Operator]
+
+  - id: openai_chatgpt_connectors
+    url: https://openai.com/chatgpt-connectors.json
+    parser: google_prefixes
+    owner: OpenAI
+    category: AI Agents bot
+    trust: identity
+    bots: [ChatGPT-User]
+
+  # --- Anthropic ---------------------------------------------------------
+  # Lista unica per tutti i crawler Anthropic: non distingue ClaudeBot da
+  # Claude-User da Claude-SearchBot. La distinzione la fa lo user agent.
+
+  - id: anthropic
+    url: https://claude.com/crawling/bots.json
+    parser: google_prefixes
+    owner: Anthropic
+    category: AI bot
+    trust: identity
+    bots: [ClaudeBot, Claude-User, Claude-SearchBot]
+
+  # --- Perplexity --------------------------------------------------------
+
+  - id: perplexity_bot
+    url: https://www.perplexity.ai/perplexitybot.json
+    parser: google_prefixes
+    owner: Perplexity
+    category: AI bot
+    trust: identity
+    bots: [PerplexityBot]
+
+  - id: perplexity_user
+    url: https://www.perplexity.ai/perplexity-user.json
+    parser: google_prefixes
+    owner: Perplexity
+    category: AI Agents bot
+    trust: identity
+    bots: [Perplexity-User]
+
+  # --- Altri motori ------------------------------------------------------
+
+  - id: apple
+    url: https://search.developer.apple.com/applebot.json
+    parser: google_prefixes
+    owner: Apple
+    category: Search engine bot
+    trust: identity
+    bots: [Applebot, Applebot-Extended]
+
+  - id: duckduckgo
+    url: https://duckduckgo.com/duckduckbot.json
+    parser: google_prefixes
+    owner: DuckDuckGo
+    category: Search engine bot
+    trust: identity
+    bots: [DuckDuckBot, DuckAssistBot]
+
+  # --- Tool SEO ----------------------------------------------------------
+
+  - id: ahrefs
+    url: https://api.ahrefs.com/v3/public/crawler-ip-ranges
+    parser: google_prefixes
+    owner: Ahrefs
+    category: General bot
+    trust: identity
+    bots: [AhrefsBot, AhrefsSiteAudit]
+
+  # --- Hosting: solo indizio, mai prova ------------------------------------
+  # 10.000+ prefissi che coprono tutta AWS. Sapere che un IP è su AWS non dice
+  # nulla su chi sia: `trust: hint` garantisce che non produca mai un VERIFIED.
+  # Serve solo a distinguere "datacenter" da "rete residenziale" nel report.
+
+  - id: aws
+    url: https://ip-ranges.amazonaws.com/ip-ranges.json
+    parser: aws_prefixes
+    owner: Amazon AWS
+    category: hosting
+    trust: hint
+    bots: []
+
+# Bot senza range pubblicati: la verifica passa solo dal rDNS
+# forward-confirmed, configurato in bots.yaml con `rdns_suffixes`.
+#   Baidu     *.crawl.baidu.com / *.baidu.jp
+#   Yandex    *.yandex.ru / *.yandex.net / *.yandex.com
+#   Semrush   nessun range pubblico, nessun PTR affidabile -> UNVERIFIABLE
+#   Bytedance nessuna lista pubblica -> UNVERIFIABLE

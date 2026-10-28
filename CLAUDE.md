@@ -110,6 +110,6 @@ Misurate su `store.lemanicasa.com` (Magento dietro Cloudflare), ma nessuna gli e
 ## Credenziali
 
 - SSH: alias `evemilano` in `~/.ssh/config`, fuori dal repo.
-- GSC: token OAuth riusato dal server MCP, `../_MCP Servers/GSC_MCP/credenziali/token.json` (scope `webmasters.readonly`). Percorso configurabile per sito.
+- GSC: token OAuth riusato dal server MCP, `G:/My Drive/CLAUDE/_secrets/gsc/token.json` (scope `webmasters.readonly`). Percorso configurabile per sito. Il refresh avviene solo in memoria: il file su Drive non viene riscritto.
 
 `logs/`, `data/`, `cache/`, `input/`, `output/`, `errors/`, `credenziali/` e `amb/` sono gitignorati.

@@ -90,8 +90,8 @@ def _service(cfg: SiteConfig):
     creds = Credentials.from_authorized_user_file(str(path), SCOPES)
     if not creds.valid:
         if creds.expired and creds.refresh_token:
+            # Refresh solo in memoria: il token sta su Drive, condiviso con il server MCP gsc.
             creds.refresh(Request())
-            path.write_text(creds.to_json(), encoding="utf-8")
         else:
             # Il flusso OAuth interattivo qui non ha senso: la pipeline gira
             # senza qualcuno davanti allo schermo.
